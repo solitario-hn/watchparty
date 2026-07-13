@@ -1,5 +1,6 @@
 import {
   HugeiconsFreeIcons,
+  Maximize02FreeIcons,
   PauseIcon,
   PlayCircleIcon,
   PlayIcon,
@@ -58,7 +59,7 @@ export default function Video() {
             controls={true}
             src={videoUrl}
           />
-          <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between bg-[#1e1e2e]">
+          <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e]">
             <button
               onClick={() => {
                 isPlaying(!playing);
@@ -86,6 +87,35 @@ export default function Video() {
                 step={0.05}
               />
             </div>
+            <div className="flex flex-row gap-3 items-center">
+              <h1 className="font-mono text-lg text-[#8b9ecf]">01:02:23</h1>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                steps="any"
+                className="w-200 bg-[#8b9ecf] h-1 rounded-lg  transition-all duration-300  accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
+              />
+            </div>
+            <button className="font-mono text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
+              CC
+            </button>
+
+            <div className="flex flex-row gap-2 items-center text-sm text-[#8b9ecf] font-mono">
+              <select
+                name="cars"
+                id="cars"
+                className="bg-[#1e1e2e] text-[#8b9ecf] outline-none rounded-sm appearance-none"
+              >
+                <option value="volvo">Normal</option>
+                <option value="saab">Slow</option>
+                <option value="mercedes">Fast</option>
+              </select>
+            </div>
+            <HugeiconsIcon
+              className="text-[#6b7180] text-2xl w-6 h-6 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75"
+              icon={Maximize02FreeIcons}
+            />
           </div>
         </div>
       )}
