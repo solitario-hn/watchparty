@@ -80,22 +80,24 @@ export default function Video() {
                 />
               </button>
               <input
-                className="w-0 bg-[#8b9ecf] h-1 rounded-lg opacity-0 transition-all duration-300 group-hover/volume:w-16 group-hover/volume:opacity-100 accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
+                className="w-0 bg-[#8b9ecf] h-1 rounded-lg opacity-0 transition-all duration-300 group-hover/volume:w-16 group-hover/volume:opacity-100 group-hover/volume:-translate-y-0.75 accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
                 type="range"
                 min={0}
                 max={1}
                 step={0.05}
               />
             </div>
-            <div className="flex flex-row gap-3 items-center">
-              <h1 className="font-mono text-lg text-[#8b9ecf]">01:02:23</h1>
+            <div className="flex  flex-row gap-3 items-center">
+              <h1 className="font-mono text-sm text-[#8b9ecf]">00:00:00</h1>
               <input
                 type="range"
                 min={0}
                 max={1}
-                steps="any"
-                className="w-200 bg-[#8b9ecf] h-1 rounded-lg  transition-all duration-300  accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
+                step="any"
+                value={0.015}
+                className="min-w-200 h-3 bg-[#2a2a2a] appearance-none focus:outline-none no-thumb cursor-pointer"
               />
+              <h1 className="font-mono text-sm text-[#8b9ecf]">01:02:23</h1>
             </div>
             <button className="font-mono text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
               CC
@@ -112,6 +114,9 @@ export default function Video() {
                 <option value="mercedes">Fast</option>
               </select>
             </div>
+            <button className="font-mono text-sm text-[#8b9ecf] rounded-sm py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
+              Sync
+            </button>
             <HugeiconsIcon
               className="text-[#6b7180] text-2xl w-6 h-6 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75"
               icon={Maximize02FreeIcons}

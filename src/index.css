@@ -4,3 +4,16 @@
 @theme {
   --font-mono: "Kode Mono", monospace;
 }
+
+/* Completely hide the thumb across all browsers */
+.no-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+}
+
+.no-thumb::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+}
