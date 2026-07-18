@@ -16,16 +16,60 @@ import {
   Play,
   PlayOff,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactPlayer from "react-player";
 
 export default function Video() {
+  const playerRef = useRef(null);
   const [link, isLinked] = useState("");
   const [videoUrl, setVideoUrl] = useState(
     "https://youtu.be/nBv5BzFpvvE?si=52of4txwdXj7kTzf",
   );
   const [playing, isPlaying] = useState(false);
   const [muted, isMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [playerbackrate, setPlayerBackRate] = useState(1);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [seek, setSeeking] = useState(false);
+  const [played, setPlayed] = useState(0);
+
+  function handleVolumeChange(event) {
+    const val = parseFloat(event.target.value);
+    setVolume(val);
+    if (val > 0) {
+      isMuted(false);
+    } else {
+      isMuted(true);
+    }
+  }
+
+  function handlePlaybackRateChange(event) {
+    setPlayerBackRate(parseFloat(event.target.value));
+  }
+
+  function handleDurationChange(event) {
+    console.log(event.target.duration);
+    if (event.target.duration) {
+      setDuration(event.target.duration);
+    }
+  }
+
+  function handleTimeUpdate(event) {
+    if (!seek) {
+      setCurrentTime(event.target.currentTime);
+      if (event.target.duration) {
+        setDuration(event.target.duration);
+        setPlayed(event.target.duration / event.target.currentTime);
+      }
+    }
+  }
+
+  function handleSeekChange(event) {
+    const value = parseFloat(event.target.value);
+    setPlayed(value);
+    setCurrentTime(value * duration);
+  }
 
   return (
     <div className="h-full items-center justify-center w-full flex">
@@ -54,10 +98,21 @@ export default function Video() {
       ) : (
         <div className="flex flex-col h-full w-full ">
           <ReactPlayer
+            ref={playerRef}
             width={"100%"}
             height={"100%"}
             controls={true}
+            playing={playing}
             src={videoUrl}
+            muted={muted}
+            volume={volume}
+            playbackRate={playerbackrate}
+            onDurationChange={(event) => {
+              handleDurationChange(event);
+            }}
+            onTimeUpdate={(event) => {
+              handleTimeUpdate(event);
+            }}
           />
           <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e]">
             <button
@@ -66,7 +121,7 @@ export default function Video() {
               }}
               className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75"
             >
-              <HugeiconsIcon icon={playing ? PlayIcon : PauseIcon} />
+              <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} />
             </button>
             <div className="flex items-center group/volume ">
               <button
@@ -85,19 +140,26 @@ export default function Video() {
                 min={0}
                 max={1}
                 step={0.05}
+                value={muted ? 0 : volume}
+                onChange={(event) => {
+                  handleVolumeChange(event);
+                }}
               />
             </div>
             <div className="flex  flex-row gap-3 items-center">
-              <h1 className="font-mono text-sm text-[#8b9ecf]">00:00:00</h1>
+              <h1 className="font-mono text-sm text-[#8b9ecf]">{played}</h1>
               <input
                 type="range"
                 min={0}
-                max={1}
+                max={0.9999999}
                 step="any"
-                value={0.015}
+                value={played}
+                onChange={(event) => {
+                  handleSeekChange(event);
+                }}
                 className="min-w-200 h-3 bg-[#2a2a2a] appearance-none focus:outline-none no-thumb cursor-pointer"
               />
-              <h1 className="font-mono text-sm text-[#8b9ecf]">01:02:23</h1>
+              <h1 className="font-mono text-sm text-[#8b9ecf]">{duration}</h1>
             </div>
             <button className="font-mono text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
               CC
@@ -105,13 +167,18 @@ export default function Video() {
 
             <div className="flex flex-row gap-2 items-center text-sm text-[#8b9ecf] font-mono">
               <select
+                value={playerbackrate}
                 name="cars"
                 id="cars"
                 className="bg-[#1e1e2e] text-[#8b9ecf] outline-none rounded-sm appearance-none"
+                onChange={(event) => {
+                  handlePlaybackRateChange(event);
+                }}
               >
-                <option value="volvo">Normal</option>
-                <option value="saab">Slow</option>
-                <option value="mercedes">Fast</option>
+                <option value={0.5}>0.5X</option>
+                <option value={1}>1.0X</option>
+                <option value={1.5}>1.5X</option>
+                <option value={2}>2.0X</option>
               </select>
             </div>
             <button className="font-mono text-sm text-[#8b9ecf] rounded-sm py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
