@@ -3,6 +3,7 @@ import {
   HugeiconsIcon,
 } from "@hugeicons/core-free-icons";
 import { ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
+import Chat from "./chat";
 
 export default function Sidebar({ showSidebar, setShowSidebar }) {
   console.log(showSidebar);
@@ -14,7 +15,7 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
         onClick={() => {
           setShowSidebar(!showSidebar);
         }}
-        className="absolute left-0 top-1/2  translate-all duration-300 hover:zoom-110 not-hover:text-[#6b7180] hover:scale-90 z-40 -translate-x-full  hover:text-blue-300"
+        className="absolute left-0 top-1/2  translate-all duration-300 hover:zoom-110 not-hover:text-[#6b7180] hover:scale-90 z-40 -translate-x-full opacity-0 hover:opacity-100 hover:text-blue-300"
       >
         {showSidebar ? (
           <ChevronRight className="w-5 h-5" />
@@ -26,7 +27,7 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
         <h1 className="text-amber-50 font-mono">Members</h1>
       </div>
       <div className="flex w-full h-full">
-        <h1 className="text-white text-9xl font-mono">Chat</h1>
+        <Chat />
       </div>
     </div>
   );

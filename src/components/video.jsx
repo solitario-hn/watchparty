@@ -60,7 +60,7 @@ export default function Video() {
       setCurrentTime(event.target.currentTime);
       if (event.target.duration) {
         setDuration(event.target.duration);
-        setPlayed(event.target.duration / event.target.currentTime);
+        setPlayed(event.target.currentTime / event.target.duration);
       }
     }
   }
@@ -70,6 +70,28 @@ export default function Video() {
     setPlayed(value);
     setCurrentTime(value * duration);
   }
+  const handleSeekMouseDown = () => {
+    setSeeking(true);
+  };
+
+  const handleSeekMouseUp = (event) => {
+    setSeeking(false);
+    const value = parseFloat(event.target.value);
+    if (playerRef.current) {
+      playerRef.current.currentTime = value * duration;
+    }
+  };
+
+  const formatTime = (seconds) => {
+    if (isNaN(seconds)) {
+      return "00:00";
+    }
+    const hour = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const second = Math.floor(seconds % 60);
+    const formatNum = (num) => String(num).padStart(2, "0");
+    return `${formatNum(hour)}:${formatNum(minutes)}:${formatNum(second)}`;
+  };
 
   return (
     <div className="h-full items-center justify-center w-full flex">
@@ -147,7 +169,9 @@ export default function Video() {
               />
             </div>
             <div className="flex  flex-row gap-3 items-center">
-              <h1 className="font-mono text-sm text-[#8b9ecf]">{played}</h1>
+              <h1 className="font-mono text-sm text-[#8b9ecf]">
+                {formatTime(played)}
+              </h1>
               <input
                 type="range"
                 min={0}
@@ -157,9 +181,15 @@ export default function Video() {
                 onChange={(event) => {
                   handleSeekChange(event);
                 }}
+                onMouseDown={handleSeekMouseDown}
+                onMouseUp={handleSeekMouseUp}
+                onTouchStart={handleSeekMouseDown}
+                onTouchEnd={handleSeekMouseUp}
                 className="min-w-200 h-3 bg-[#2a2a2a] appearance-none focus:outline-none no-thumb cursor-pointer"
               />
-              <h1 className="font-mono text-sm text-[#8b9ecf]">{duration}</h1>
+              <h1 className="font-mono text-sm text-[#8b9ecf]">
+                {formatTime(duration)}
+              </h1>
             </div>
             <button className="font-mono text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
               CC
