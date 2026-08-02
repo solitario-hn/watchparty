@@ -4,6 +4,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import Chat from "./chat";
+import Member from "./members";
 
 export default function Sidebar({ showSidebar, setShowSidebar }) {
   console.log(showSidebar);
@@ -24,7 +25,7 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
         )}
       </button>
       <div className="flex w-full h-28 border-b border-[#2C2C38]">
-        <h1 className="text-amber-50 font-mono">Members</h1>
+        <Member />
       </div>
       <div className="flex w-full h-full">
         <Chat />
