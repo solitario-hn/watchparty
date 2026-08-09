@@ -33,34 +33,36 @@ export default function Member() {
   ]);
 
   const [showDropDown, setDropDown] = useState(false);
+  const visibleMembers = member.slice(0, 3);
+  const remainingMembers = member.length - visibleMembers.length;
 
   return (
-    <div className="relative flex flex-col justify-center w-full select-none py-1 ">
-      <div className="flex justify-center m-2">
-        <p className="text-[#6b7180] font-mono text-[20px] px-5 py-5 ">
-          In the room ◦{member.length}
-        </p>
-      </div>
-      <div className="flex items-center ">
-        <div
-          onClick={() => setDropDown(!showDropDown)}
-          className="flex items-center -space-x-2 cursor-pointer group"
-        >
-          {member.forEach((element) => {
+    <div className=" realtive">
+      <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">
+        IN THE ROOM · {member.length}
+      </div>{" "}
+      <div
+        onClick={() => setDropDown(!showDropDown)}
+        className="flex items-center -space-x-2 cursor-pointer group"
+      >
+        {visibleMembers.forEach((element) => {
+          <div
+            id={element.id}
+            className="relative   "
+            style={{ zIndex: `${element.id}` }}
+          >
             <div
-              id={element.id}
-              className="relative group/avatar  "
-              style={{ zIndex: `${element.id}` }}
+              className={`w-8 h-8 rounded-full ${element.bg} border-2 border-blue-300 flex items-center justify-center text-xs shadow-md transition-all duration-200 group-hover/avatar:scale-110 group-hover/avatar:z-50  `}
             >
-              <div
-                className={`w-8 h-8 rounded-full ${element.bg} border-2 border-blue-300 flex items-center justify-center text-xs shadow-md transition-all duration-200 group-hover/avatar:scale-110 group-hover/avatar:z-50  `}
-              >
-                {element.name.charAt(0).toUpperCase()}
-              </div>
-            </div>;
-          })}
-          {/* <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hid"></div> */}
-        </div>
+              {element.initial}
+            </div>
+          </div>;
+        })}
+        {remainingMembers > 0 && (
+          <div className="w-8 h-8 rounded-full bg-[#e3edfc] border-2 border-blue-300 flex items-center justify-center text-xs shadow-md transition-all duration-200 group-hover:scale-110 group-hover:z-50">
+            +{remainingMembers}
+          </div>
+        )}
       </div>
     </div>
   );

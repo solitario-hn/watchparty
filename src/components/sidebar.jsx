@@ -10,7 +10,7 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
   console.log(showSidebar);
   return (
     <div
-      className={`relative text-3xl h-full transition-all duration-300 flex flex-col border-l border-[#2C2C38] ${showSidebar ? "w-[35%]" : "w-0"}`}
+      className={`relative text-3xl h-full transition-all duration-300 flex flex-col border-l border-[#2C2C38] ${showSidebar ? "w-[25%]" : "w-0"}`}
     >
       <button
         onClick={() => {
@@ -24,10 +24,11 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
           <ChevronLeft className="w-5 h-5 text-blue-300 animate-pulse" />
         )}
       </button>
-      <div className="flex w-full h-28 border-b border-[#2C2C38]">
-        <Member />
-      </div>
-      <div className="flex w-full h-full">
+
+      <div className="flex  flex-col w-full h-full">
+        <div className="flex w-full h-28 border-b border-[#2C2C38] shrink-0">
+          <Member />
+        </div>
         <Chat />
       </div>
     </div>

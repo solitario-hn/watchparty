@@ -1,5 +1,5 @@
 import { SendToBackIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Chat() {
   const [messages, setmessages] = useState([
@@ -20,43 +20,55 @@ export default function Chat() {
   const handleSend = (event) => {
     console.log("sending message");
     event.preventDefault(); //to prevent function from breaking while ui updates
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    if (!inputText.trim()) return;
 
-    console.log("sending message");
     const newMessage = {
-      id: messages.length() + 1,
-      user: "you",
-      message: inputText,
-      timestamp: timeStr,
+      id: Date.now(),
+      user: "You",
+      message: inputText.trim(),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
     setmessages((prev) => [...prev, newMessage]); //to avoid rewriting the whole messages to new messages only.
     setInputText("");
   };
+  const endMessageRef = useRef(null);
+  const scrollToBottom = () => {
+    endMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
-    <div className="flex flex-col w-full min-h-0  bg-[#77819a]">
+    <div className="flex flex-col w-full min-h-0 flex-1">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#2C2C38] scrollbar-track-transparent">
         {messages.map((eachText) => {
           return (
             <div key={eachText.id} className="felx flex-col">
               <div className="flex items-center gap-2 mb-1 px-1">
-                <h1 className="text-xs font-semibold">{eachText.user}</h1>
-                <p className="text-[10px] text-[#555574]">
+                <h1 className="text-[16px] font-semibold font-sans text-[#8da2ec]">
+                  {eachText.user}
+                </h1>
+                <p className="text-[14px] text-gray-600">
                   {eachText.timestamp}
                 </p>
               </div>
               <div
-                className={`px-3 py-2 rounded-2xl text-sm font-sans break-words `}
+                className={`px-1 py-2 rounded-2xl text-sm font-mono break-words text-[#D9D6D1]`}
               >
                 {eachText.message}
               </div>
             </div>
           );
         })}
+        <div ref={endMessageRef}></div>
       </div>
       <form
         onSubmit={handleSend}
-        className="p-3 border-t border-[#2C2C38] bg-[#1e1e2e] flex gap-2 items-center shrink-0"
+        className="p-3 border-t border-[#2C2C38] bg-[#1e1e2e] flex gap-2 items-center shrink-0 h-10"
       >
         <input
           placeholder="Join the chat"
@@ -65,10 +77,10 @@ export default function Chat() {
           onChange={(event) => {
             setInputText(event.target.value);
           }}
-          className="flex-1 h-9 px-3 bg-[#282838] border border-[#2C2C38] rounded-full text-xs text-white placeholder-[#555574] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 transition-all duration-300 font-mono"
+          className="flex-1 h-8 px-2 py-3 bg-[#282838] border border-[#2C2C38] rounded-full text-xs text-white placeholder-[#555574] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 transition-all duration-300 font-mono"
         ></input>
         <button
-          className="w-9 h-9 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all duration-300 active:scale-95 shrink-0 cursor-pointer shadow-md shadow-blue-950/20"
+          className="w-7 h-7 flex items-center justify-center bg-[#282838] hover:bg-yellow-600 text-white rounded-full transition-all duration-300 active:scale-95 shrink-0 cursor-pointer shadow-md shadow-blue-950/20"
           type="submit"
         >
           <SendToBackIcon />

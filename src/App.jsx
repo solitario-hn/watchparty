@@ -8,7 +8,7 @@ function App() {
   return (
     <section className="flex flex-col bg-[#14141B] w-screen h-screen overflow-hidden">
       <Navbar />
-      <div className="flex-row flex flex-1 w-full h-full">
+      <div className="flex-row flex flex-1 w-full min-h-0">
         <Video />
         <Sidebar showSidebar={showSidebar} setShowSidebar={setShowSidebar} />
       </div>

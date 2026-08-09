@@ -94,7 +94,7 @@ export default function Video() {
   };
 
   return (
-    <div className="h-full items-center justify-center w-full flex">
+    <div className="h-full items-center justify-center w-full flex flex-1">
       {videoUrl === "" ? (
         <div className="relative transition-all duration-300 hover:scale-105 hover:-translate-y-2 scale-90 flex w-160 items-center text-[#555574] rounded-md bg-[#282838] p-2 outline-dashed outline-2 hover:outline-blue-300 focus-within:outline-blue-400">
           <input
@@ -136,12 +136,12 @@ export default function Video() {
               handleTimeUpdate(event);
             }}
           />
-          <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e]">
+          <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e] shrink-0">
             <button
               onClick={() => {
                 isPlaying(!playing);
               }}
-              className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75"
+              className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75 shrink-0"
             >
               <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} />
             </button>
@@ -150,14 +150,14 @@ export default function Video() {
                 onClick={() => {
                   isMuted(!muted);
                 }}
-                className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75"
+                className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75 shrink-0"
               >
                 <HugeiconsIcon
                   icon={muted ? VolumeMute02FreeIcons : VolumeHighFreeIcons}
                 />
               </button>
               <input
-                className="w-0 bg-[#8b9ecf] h-1 rounded-lg opacity-0 transition-all duration-300 group-hover/volume:w-16 group-hover/volume:opacity-100 group-hover/volume:-translate-y-0.75 accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
+                className="w-0 shrink-0 bg-[#8b9ecf] h-1 rounded-lg opacity-0 transition-all duration-300 group-hover/volume:w-16 group-hover/volume:opacity-100 group-hover/volume:-translate-y-0.75 accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
                 type="range"
                 min={0}
                 max={1}
@@ -168,7 +168,7 @@ export default function Video() {
                 }}
               />
             </div>
-            <div className="flex  flex-row gap-3 items-center">
+            <div className="flex  flex-row gap-3 items-center min-w-0 flex-1">
               <h1 className="font-mono text-sm text-[#8b9ecf]">
                 {formatTime(played)}
               </h1>
@@ -185,17 +185,17 @@ export default function Video() {
                 onMouseUp={handleSeekMouseUp}
                 onTouchStart={handleSeekMouseDown}
                 onTouchEnd={handleSeekMouseUp}
-                className="min-w-200 h-3 bg-[#2a2a2a] appearance-none focus:outline-none no-thumb cursor-pointer"
+                className="flex-1 h-3 bg-[#2a2a2a] appearance-none focus:outline-none no-thumb cursor-pointer"
               />
-              <h1 className="font-mono text-sm text-[#8b9ecf]">
+              <h1 className="font-mono text-sm text-[#8b9ecf] shrink-0">
                 {formatTime(duration)}
               </h1>
             </div>
-            <button className="font-mono text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
+            <button className="font-mono shrink-0 text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
               CC
             </button>
 
-            <div className="flex flex-row gap-2 items-center text-sm text-[#8b9ecf] font-mono">
+            <div className="flex flex-row gap-2 items-center text-sm text-[#8b9ecf] font-mono shrink-0">
               <select
                 value={playerbackrate}
                 name="cars"
@@ -211,7 +211,7 @@ export default function Video() {
                 <option value={2}>2.0X</option>
               </select>
             </div>
-            <button className="font-mono text-sm text-[#8b9ecf] rounded-sm py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
+            <button className="font-mono shrink-0 text-sm text-[#8b9ecf] rounded-sm py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
               Sync
             </button>
             <HugeiconsIcon
