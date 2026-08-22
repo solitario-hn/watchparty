@@ -1,3 +1,9 @@
+import {
+  Sent02Icon,
+  SentFreeIcons,
+  SentIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { SendToBackIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -6,14 +12,15 @@ export default function Chat() {
     {
       id: 1,
       user: "nunu",
-      message: "ruk ja bhai",
-      timestamp: "12:00:00",
+      message:
+        "ruk ja bhai bahut hogyaa kitne ep dekhegi ek din react to hone se rhi isse pe pe krwao",
+      timestamp: "12:00",
     },
     {
       id: 2,
       user: "susu",
       message: "susu aari",
-      timestamp: "12:01:00",
+      timestamp: "12:01",
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -47,7 +54,10 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#2C2C38] scrollbar-track-transparent">
         {messages.map((eachText) => {
           return (
-            <div key={eachText.id} className="felx flex-col">
+            <div
+              key={eachText.id}
+              className="felx flex-col max-w-[80%] mr-auto items-start gap-1"
+            >
               <div className="flex items-center gap-2 mb-1 px-1">
                 <h1 className="text-[16px] font-semibold font-sans text-[#8da2ec]">
                   {eachText.user}
@@ -57,7 +67,7 @@ export default function Chat() {
                 </p>
               </div>
               <div
-                className={`px-1 py-2 rounded-2xl text-sm font-mono break-words text-[#D9D6D1]`}
+                className={`px-3 py-2 rounded-2xl rounded-tl-none text-gray-200 text-sm font-sans border border-[#2c2c38]/40 break-words bg-[#282838]`}
               >
                 {eachText.message}
               </div>
@@ -80,10 +90,10 @@ export default function Chat() {
           className="flex-1 h-8 px-2 py-3 bg-[#282838] border border-[#2C2C38] rounded-full text-xs text-white placeholder-[#555574] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 transition-all duration-300 font-mono"
         ></input>
         <button
-          className="w-7 h-7 flex items-center justify-center bg-[#282838] hover:bg-yellow-600 text-white rounded-full transition-all duration-300 active:scale-95 shrink-0 cursor-pointer shadow-md shadow-blue-950/20"
+          className="w-7 h-7 px-1 py-1 text-[#6b7180] hover:text-blue-300 flex items-center justify-center rounded-full transition-all duration-300 active:scale-95 shrink-0 cursor-pointer shadow-md shadow-blue-950/20"
           type="submit"
         >
-          <SendToBackIcon />
+          <HugeiconsIcon icon={SentFreeIcons} />
         </button>
       </form>
     </div>

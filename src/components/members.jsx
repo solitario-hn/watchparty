@@ -14,14 +14,14 @@ export default function Member() {
       name: "Gupta",
       initial: "G",
       status: "participant",
-      bg: "bg-[#e3edfc]",
+      bg: "bg-[#4f8f7d]",
     },
     {
       id: 3,
       name: "Royal King",
       initial: "R",
       status: "host",
-      bg: "bg-[#092b08]",
+      bg: "bg-[#7669aa]",
     },
     {
       id: 4,
@@ -37,29 +37,29 @@ export default function Member() {
   const remainingMembers = member.length - visibleMembers.length;
 
   return (
-    <div className=" realtive">
+    <div>
       <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">
         IN THE ROOM · {member.length}
-      </div>{" "}
+      </div>
       <div
-        onClick={() => setDropDown(!showDropDown)}
+        // onClick={() => setDropDown(!showDropDown)}
         className="flex items-center -space-x-2 cursor-pointer group"
       >
-        {visibleMembers.forEach((element) => {
+        {visibleMembers.map((element) => (
           <div
-            id={element.id}
-            className="relative   "
-            style={{ zIndex: `${element.id}` }}
+            key={element.id}
+            className="relative"
+            style={{ zIndex: element.id }}
           >
             <div
-              className={`w-8 h-8 rounded-full ${element.bg} border-2 border-blue-300 flex items-center justify-center text-xs shadow-md transition-all duration-200 group-hover/avatar:scale-110 group-hover/avatar:z-50  `}
+              className={`w-8 h-8 rounded-full ${element.bg} border-2 border-black flex items-center justify-center text-xs`}
             >
               {element.initial}
             </div>
-          </div>;
-        })}
+          </div>
+        ))}
         {remainingMembers > 0 && (
-          <div className="w-8 h-8 rounded-full bg-[#e3edfc] border-2 border-blue-300 flex items-center justify-center text-xs shadow-md transition-all duration-200 group-hover:scale-110 group-hover:z-50">
+          <div className="w-8 h-8 rounded-full bg-[#e3edfc] border-2 border-black flex items-center justify-center text-xs shadow-md ">
             +{remainingMembers}
           </div>
         )}

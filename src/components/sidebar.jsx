@@ -26,7 +26,7 @@ export default function Sidebar({ showSidebar, setShowSidebar }) {
       </button>
 
       <div className="flex  flex-col w-full h-full">
-        <div className="flex w-full h-28 border-b border-[#2C2C38] shrink-0">
+        <div className="flex w-full h-28 border-b border-[#2C2C38] shrink-0 px-2 py-2 items-center">
           <Member />
         </div>
         <Chat />

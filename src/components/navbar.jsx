@@ -1,5 +1,6 @@
 import { CircleCheck, CircleFadingPlus } from "lucide-react";
 import { useState } from "react";
+import WFillLogo from "./logo";
 
 export default function Navbar() {
   const [copied, isCopied] = useState(false);
@@ -12,7 +13,7 @@ export default function Navbar() {
   };
   return (
     <div className="h-18 w-full flex border-b px-4 border-[#2C2C38] items-center justify-between">
-      <h1 className="text-3xl font-mono text-[#6b7180] font-semibold">HBS</h1>
+      <WFillLogo size={50} />
       <button
         onClick={HandleCopy}
         className="text-[#6b7180] text-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:text-blue-300"
