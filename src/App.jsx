@@ -1,18 +1,16 @@
 import { useState } from "react";
-import Navbar from "./components/navbar";
-import Sidebar from "./components/sidebar";
-import Video from "./components/video";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Home from "./pages/landingpage";
+import Watchparty from "./pages/watchparty";
 
 function App() {
-  const [showSidebar, setShowSidebar] = useState(true);
   return (
-    <section className="flex flex-col bg-[#14141B] w-screen h-screen overflow-hidden">
-      <Navbar />
-      <div className="flex-row flex flex-1 w-full min-h-0">
-        <Video />
-        <Sidebar showSidebar={showSidebar} setShowSidebar={setShowSidebar} />
-      </div>
-    </section>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/watch" element={<Watchparty />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
