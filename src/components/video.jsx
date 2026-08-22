@@ -22,9 +22,7 @@ import ReactPlayer from "react-player";
 export default function Video() {
   const playerRef = useRef(null);
   const [link, isLinked] = useState("");
-  const [videoUrl, setVideoUrl] = useState(
-    "https://youtu.be/nBv5BzFpvvE?si=52of4txwdXj7kTzf",
-  );
+  const [videoUrl, setVideoUrl] = useState("");
   const [playing, isPlaying] = useState(false);
   const [muted, isMuted] = useState(false);
   const [volume, setVolume] = useState(1);
