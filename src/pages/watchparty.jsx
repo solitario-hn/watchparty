@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Video from "../components/video";
-import Navbar from "../components/navbar";
-import Sidebar from "../components/sidebar";
+import Navbar from "../components/watchparty/navbar";
+import Video from "../components/watchparty/video";
+import Sidebar from "../components/watchparty/sidebar";
 
 function Watchparty() {
   const [showSidebar, setShowSidebar] = useState(true);

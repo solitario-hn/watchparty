@@ -7,7 +7,6 @@ import Chat from "./chat";
 import Member from "./members";
 
 export default function Sidebar({ showSidebar, setShowSidebar }) {
-  console.log(showSidebar);
   return (
     <div
       className={`relative text-3xl h-full transition-all duration-300 flex flex-col border-l border-[#2C2C38] ${showSidebar ? "w-[25%]" : "w-0"}`}
