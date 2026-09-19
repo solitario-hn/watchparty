@@ -11,6 +11,7 @@ export default function Chat() {
   const [messages, setmessages] = useState([
     {
       id: 1,
+
       user: "Olivia",
       message:
         "ruk ja bhai bahut hogyaa kitne ep dekhegi ek din react to hone se rhi isse pe pe krwao",

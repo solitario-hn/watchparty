@@ -7,6 +7,25 @@ import path from "path";
 
 dotenv.config(); // Load environment variables from .env file
 
+interface SubtitleState {
+  id: string;
+  name: string;
+  content: string;
+  language: string;
+}
+
+interface RoomState {
+  roomId: string;
+  videoUrl: string;
+  playing: boolean;
+  currentTime: number;
+  playbackRate: number;
+  updatedAt: number;
+  subtitle: SubtitleState[];
+  selectedSubtitle: string;
+
+  // Add any other properties you want to track for the room
+}
 const app = express();
 app.use(cors());
 app.use(express.json()); //express returns response in raw data parsing to json.
@@ -19,7 +38,29 @@ app.use(express.static(path.join(__dirname, "public"))); //to serve static files
 // feet check plz
 // fit check plz
 
-const server = http.createServer(app);
+const httpserver = http.createServer(app);
+const SocketIO = new Server(httpserver, {
+  cors: {
+    origin: "*", // Allow requests from any origin
+    methods: ["GET", "POST"], // Allow GET and POST methods
+  },
+});
+
+const rooms = new Map<string, RoomState>();
+
+SocketIO.on("connection", (socket: Socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("messages", (data) => {
+    console.log("Received message:", data);
+    socket.broadcast.emit("test", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected:", socket.id);
+  });
+});
+
 app.get("/", (req: Request, res: Response) => {
   //get to give response to the user without any data asked. / post is used when client has to provide some set of pre-data and then response in provided.
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -32,6 +73,6 @@ app.post("/sleep", (req: Request, res: Response) => {
     sleep: "sleep",
   });
 });
-server.listen(3000, () => {
+httpserver.listen(3000, () => {
   console.log("Server is running on port 3000");
 });

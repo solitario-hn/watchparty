@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { socketClient } from "../socketclient";
 
 export default function Hnavbar() {
+  useEffect(() => {
+    socketClient.emit("messages", "hello from client");
+  }, []);
   const link = "watchparty.app/r/watchnow";
   const [copy, isCopied] = useState(false);
   return (
