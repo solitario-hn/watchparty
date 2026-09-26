@@ -7,23 +7,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { SendToBackIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export default function Chat() {
-  const [messages, setmessages] = useState([
-    {
-      id: 1,
-
-      user: "Olivia",
-      message:
-        "ruk ja bhai bahut hogyaa kitne ep dekhegi ek din react to hone se rhi isse pe pe krwao",
-      timestamp: "12:00",
-    },
-    {
-      id: 2,
-      user: "Sabrina",
-      message: "lmao",
-      timestamp: "12:01",
-    },
-  ]);
+export default function Chat(roomId) {
+  const [messages, setmessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const handleSend = (event) => {
     console.log("sending message");
