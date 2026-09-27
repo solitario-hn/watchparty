@@ -6,25 +6,29 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SendToBackIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Socket } from "socket.io-client";
+import { socketClient } from "../socketclient";
+import getUser from "../../utils/type";
 
-export default function Chat(roomId) {
+export default function Chat() {
   const [messages, setmessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const handleSend = (event) => {
-    console.log("sending message");
     event.preventDefault(); //to prevent function from breaking while ui updates
     if (!inputText.trim()) return;
 
     const newMessage = {
-      id: Date.now(),
-      user: "You",
+      keyId: Date.now(), //id for map
+      user: getUser(),
       message: inputText.trim(),
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
     };
+    console.log(newMessage, "sender");
     setmessages((prev) => [...prev, newMessage]); //to avoid rewriting the whole messages to new messages only.
+    socketClient.emit("chat_message", newMessage.message);
     setInputText("");
   };
   const endMessageRef = useRef(null);
@@ -35,13 +39,33 @@ export default function Chat(roomId) {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    socketClient.on("chat_message", (data) => {
+      console.log(data);
+      const newMessage = {
+        keyId: data.roomId,
+        user: data.userName,
+        message: data.message,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      setmessages((prev) => [...prev, newMessage]); //to avoid rewriting the whole messages to new messages only.
+    });
+
+    return () => {
+      socketClient.off("chat_message");
+    };
+  }, []);
+
   return (
     <div className="flex flex-col w-full min-h-0 flex-1">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#2C2C38] scrollbar-track-transparent">
         {messages.map((eachText) => {
           return (
             <div
-              key={eachText.id}
+              key={eachText.keyId}
               className="felx flex-col max-w-[80%] mr-auto items-start gap-1"
             >
               <div className="flex items-center gap-2 mb-1 px-1">

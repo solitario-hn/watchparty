@@ -44,9 +44,16 @@ const rooms = new Map<string, RoomState>();
 SocketIO.on("connection", (socket: Socket) => {
   console.log("A user connected:", socket.id);
 
-  socket.on("joined_room", (data) => {
+  socket.on("joined_room", async (data) => {
     const roomId = data.roomId;
     const userName = data.userName;
+
+    const clients = await socket.in(roomId).fetchSockets();
+    const users = clients.map((client) => ({
+      socketId: client.id,
+    }));
+
+    socket.emit("room_members", users);
 
     if (socket.data.roomId) socket.leave(socket.data.roomId);
 
@@ -70,21 +77,26 @@ SocketIO.on("connection", (socket: Socket) => {
   });
 
   socket.on("chat_message", (data) => {
-    const roomId = socket.data.roomId;
-    const message = data;
-
-    const messageforMap = {
-      id: randomUUID(),
-      message: message,
+    //backend is listening from the socketClient.
+    console.log(data);
+    const newMessage = {
+      roomId: socket.data.roomId,
       userName: socket.data.userName,
-      sendAt: new Date().toISOString(),
+      message: data,
     };
 
-    socket.to(roomId).emit("chat_message", messageforMap);
+    socket.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client.
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("A user disconnected:", socket.id);
+
+    const clients = await socket.in(socket.data.roomId).fetchSockets();
+    const users = clients.map((client) => ({
+      socketId: client.id,
+    }));
+
+    socket.emit("room_members", users);
   });
 });
 

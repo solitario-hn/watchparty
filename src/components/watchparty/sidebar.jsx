@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import Chat from "./chat";
 import Member from "./members";
 
-export default function Sidebar({ showSidebar, setShowSidebar, roomId }) {
+export default function Sidebar({ showSidebar, setShowSidebar }) {
   return (
     <div
       className={`relative text-3xl h-full transition-all duration-300 flex flex-col border-l border-[#2C2C38] ${showSidebar ? "w-[25%]" : "w-0"}`}
@@ -28,7 +28,7 @@ export default function Sidebar({ showSidebar, setShowSidebar, roomId }) {
         <div className="flex w-full h-28 border-b border-[#2C2C38] shrink-0 px-2 py-2 items-center">
           <Member />
         </div>
-        <Chat roomId={roomId} />
+        <Chat />
       </div>
     </div>
   );

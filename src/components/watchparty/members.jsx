@@ -1,36 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { socketClient } from "../socketclient";
+import getUser from "../../utils/type";
+
+const BG_COLORS = [
+  "bg-[#f4b41a]",
+  "bg-[#4f8f7d]",
+  "bg-[#7669aa]",
+  "bg-[#8b2963]",
+  "bg-[#3b82f6]",
+  "bg-[#10b981]",
+];
 
 export default function Member() {
-  const [member, setMember] = useState([
-    {
-      id: 1,
-      name: "Bahadur",
-      initial: "B",
-      status: "participant",
-      bg: "bg-[#f4b41a]",
-    },
-    {
-      id: 2,
-      name: "Gupta",
-      initial: "G",
-      status: "participant",
-      bg: "bg-[#4f8f7d]",
-    },
-    {
-      id: 3,
-      name: "Royal King",
-      initial: "R",
-      status: "host",
-      bg: "bg-[#7669aa]",
-    },
-    {
-      id: 4,
-      name: "Raj Vijay Bahadur",
-      initial: "R",
-      status: "participant",
-      bg: "bg-[#8b2963]",
-    },
-  ]);
+  const [member, setMember] = useState([]);
+
+  useEffect(() => {
+    const HandleRoomMembers = (users) => {
+      const newMember = users.map((user) => ({
+        id: user.socketId,
+        name: getUser(),
+        initial: getUser()[0],
+        status: "participant",
+        bg: BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)],
+      }));
+      setMember(newMember);
+    };
+
+    socketClient.on("room_members", HandleRoomMembers);
+
+    return () => {
+      socketClient.off("room_members", HandleRoomMembers);
+    };
+  }, []);
 
   const [showDropDown, setDropDown] = useState(false);
   const visibleMembers = member.slice(0, 3);
