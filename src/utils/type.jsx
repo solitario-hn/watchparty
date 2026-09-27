@@ -4,7 +4,7 @@ export default function getUser() {
     return userName;
   } else {
     const userName = `Guest_${Math.floor(Math.random() * 1000)}`; //generates a random guest name.
-    localStorage.setItem("watchpaty_name", userName);
+    localStorage.setItem("watchparty_name", userName);
     return userName;
   }
 }

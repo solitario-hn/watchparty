@@ -48,18 +48,19 @@ SocketIO.on("connection", (socket: Socket) => {
     const roomId = data.roomId;
     const userName = data.userName;
 
-    const clients = await socket.in(roomId).fetchSockets();
-    const users = clients.map((client) => ({
-      socketId: client.id,
-    }));
-
-    socket.emit("room_members", users);
-
     if (socket.data.roomId) socket.leave(socket.data.roomId);
 
     socket.data.roomId = roomId;
     socket.data.userName = userName;
     socket.join(roomId);
+
+    const clients = await socket.in(roomId).fetchSockets();
+    const users = clients.map((client) => ({
+      socketId: client.id,
+      userName: client.data.userName,
+    }));
+
+    socket.emit("room_members", users);
 
     const room = rooms.get(roomId);
     if (!room) {
@@ -74,6 +75,29 @@ SocketIO.on("connection", (socket: Socket) => {
         selectedSubtitle: "",
       });
     }
+
+    const systemMessage = {
+      keyId: randomUUID(),
+      userName: "system",
+      message: `${socket.data.userName} joined the party.`,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+    socket.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
+  });
+
+  socket.on("change_userName", async (data) => {
+    socket.data.userName = data;
+
+    const clients = await socket.in(socket.data.roomId).fetchSockets();
+    const users = clients.map((client) => ({
+      socketId: client.id,
+      userName: client.data.userName,
+    }));
+
+    socket.emit("room_members", users);
   });
 
   socket.on("chat_message", (data) => {
@@ -85,7 +109,7 @@ SocketIO.on("connection", (socket: Socket) => {
       message: data,
     };
 
-    socket.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client.
+    socket.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client (except the sender that is listening/call the chat_message initially.)
   });
 
   socket.on("disconnect", async () => {
@@ -94,9 +118,21 @@ SocketIO.on("connection", (socket: Socket) => {
     const clients = await socket.in(socket.data.roomId).fetchSockets();
     const users = clients.map((client) => ({
       socketId: client.id,
+      userName: client.data.userName,
     }));
 
     socket.emit("room_members", users);
+    //generating system message.
+    const systemMessage = {
+      keyId: randomUUID(),
+      userName: "system",
+      message: `${socket.data.userName} disconnected from the room.`,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+    socket.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
   });
 });
 

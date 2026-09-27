@@ -43,8 +43,8 @@ export default function Chat() {
     socketClient.on("chat_message", (data) => {
       console.log(data);
       const newMessage = {
-        keyId: data.roomId,
-        user: data.userName,
+        keyId: Date.now(), //id for map
+        user: data.userName.trim(),
         message: data.message,
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -63,6 +63,18 @@ export default function Chat() {
     <div className="flex flex-col w-full min-h-0 flex-1">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#2C2C38] scrollbar-track-transparent">
         {messages.map((eachText) => {
+          if (eachText.user === "system") {
+            return (
+              <div
+                key={eachText.keyId}
+                className="flex items-center justify-center my-1 w-full"
+              >
+                <div className="text-[11px] text-gray-400  font-mono">
+                  {eachText.message}
+                </div>
+              </div>
+            );
+          }
           return (
             <div
               key={eachText.keyId}
