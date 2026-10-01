@@ -34,17 +34,32 @@ export default function Video() {
   const [played, setPlayed] = useState(0);
 
   useEffect(() => {
-    socketClient.on("video_link", (data) => {
-      setVideoUrl(data);
+    socketClient.on("room_state", (data) => {
+      HandleRoomState(data);
     });
 
     return () => {
-      socketClient.off("video_link");
+      socketClient.off("room_state", HandleRoomState);
     };
   }, []);
 
-  function handleVideoURL(url) {
-    socketClient.emit("video_link", url);
+  function HandleRoomState(data) {
+    if (!data) {
+      return;
+    }
+    if (data.videoUrl !== videoUrl && data.videoUrl) {
+      setVideoUrl(data.videoUrl);
+    }
+    if (typeof data.playing === "boolean") {
+      isPlaying(data.playing);
+    }
+    if (typeof data.playbackRate === "number") {
+      setPlayerBackRate(data.playbackRate);
+    }
+    if (typeof data.currentTime === "number" && playerRef.current) {
+      playerRef.current.currentTime = data.currentTime;
+      setCurrentTime(data.currentTime);
+    }
   }
 
   function handleVolumeChange(event) {
@@ -57,9 +72,32 @@ export default function Video() {
     }
   }
 
+  function handleVideoURL(url) {
+    setVideoUrl(url);
+    setCurrentTime(0);
+    setPlayed(0);
+    isPlaying(true);
+
+    socketClient.emit("room_state", {
+      videoUrl: url,
+      currentTime: 0,
+      playing: true,
+      playbackRate: playerbackrate,
+    });
+  }
+
+  function handlePlayPause() {
+    const newPlayingState = !playing;
+    isPlaying(newPlayingState);
+    socketClient.emit("room_state", {
+      playing: newPlayingState,
+    });
+  }
+
   function handlePlaybackRateChange(event) {
-    setPlayerBackRate(parseFloat(event.target.value));
-    socketClient.emit;
+    const rate = parseFloat(event.target.value);
+    setPlayerBackRate(rate);
+    socketClient.emit("room_state", { playbackRate: rate });
   }
 
   function handleDurationChange(event) {
@@ -91,9 +129,14 @@ export default function Video() {
   const handleSeekMouseUp = (event) => {
     setSeeking(false);
     const value = parseFloat(event.target.value);
+    const newTime = value * duration;
     if (playerRef.current) {
-      playerRef.current.currentTime = value * duration;
+      playerRef.current.currentTime = newTime;
     }
+    setCurrentTime(newTime);
+    setPlayed(value);
+
+    socketClient.emit("room_state", { currentTime: newTime, playing: playing });
   };
 
   const formatTime = (seconds) => {
@@ -153,7 +196,7 @@ export default function Video() {
           <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e] shrink-0">
             <button
               onClick={() => {
-                isPlaying(!playing);
+                handlePlayPause();
               }}
               className="text-[#6b7180] text-2xl w-7 h-7 transition-all duration-300 hover:text-blue-300 cursor-pointer hover:scale-105 hover:-translate-y-0.75 shrink-0"
             >
@@ -184,7 +227,7 @@ export default function Video() {
             </div>
             <div className="flex  flex-row gap-3 items-center min-w-0 flex-1">
               <h1 className="font-mono text-sm text-[#8b9ecf]">
-                {formatTime(played)}
+                {formatTime(currentTime)}
               </h1>
               <input
                 type="range"
@@ -212,8 +255,8 @@ export default function Video() {
             <div className="flex flex-row gap-2 items-center text-sm text-[#8b9ecf] font-mono shrink-0">
               <select
                 value={playerbackrate}
-                name="cars"
-                id="cars"
+                name="playbackRate"
+                id="playbackRate"
                 className="bg-[#1e1e2e] text-[#8b9ecf] outline-none rounded-sm appearance-none"
                 onChange={(event) => {
                   handlePlaybackRateChange(event);
