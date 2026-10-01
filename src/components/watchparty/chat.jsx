@@ -16,18 +16,6 @@ export default function Chat() {
   const handleSend = (event) => {
     event.preventDefault(); //to prevent function from breaking while ui updates
     if (!inputText.trim()) return;
-
-    const newMessage = {
-      keyId: Date.now(), //id for map
-      user: getUser(),
-      message: inputText.trim(),
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-    console.log(newMessage, "sender");
-    setmessages((prev) => [...prev, newMessage]); //to avoid rewriting the whole messages to new messages only.
     socketClient.emit("chat_message", newMessage.message);
     setInputText("");
   };

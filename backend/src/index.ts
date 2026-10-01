@@ -32,6 +32,7 @@ app.use(express.json()); //express returns response in raw data parsing to json.
 app.use(express.static(path.join(__dirname, "public"))); //to serve static files from public folder
 
 const httpserver = http.createServer(app);
+
 const SocketIO = new Server(httpserver, {
   cors: {
     origin: "*", // Allow requests from any origin
@@ -41,26 +42,35 @@ const SocketIO = new Server(httpserver, {
 
 const rooms = new Map<string, RoomState>();
 
+// SocketIO connection event listener
+// SocketIO is listening for connection events from clients.
+// socket is an individual connection to a client. Each client has its own socket connection.
+// socket.on() listen to
+// socket.emit()
+// socket.broadcast()
+// SocketIO.emit()
+// SokcetIO.to(roomid).emit()
+// socket.to(roomid).emit()
+
 SocketIO.on("connection", (socket: Socket) => {
+  //SocketIO (har ek individual bande ki request listen kar raha main connection)
   console.log("A user connected:", socket.id);
 
   socket.on("joined_room", async (data) => {
     const roomId = data.roomId;
     const userName = data.userName;
-
     if (socket.data.roomId) socket.leave(socket.data.roomId);
 
     socket.data.roomId = roomId;
     socket.data.userName = userName;
     socket.join(roomId);
 
-    const clients = await socket.in(roomId).fetchSockets();
+    const clients = await SocketIO.in(roomId).fetchSockets();
     const users = clients.map((client) => ({
       socketId: client.id,
       userName: client.data.userName,
     }));
-
-    socket.emit("room_members", users);
+    SocketIO.to(roomId).emit("room_members", users);
 
     const room = rooms.get(roomId);
     if (!room) {
@@ -85,7 +95,7 @@ SocketIO.on("connection", (socket: Socket) => {
         minute: "2-digit",
       }),
     };
-    socket.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
+    SocketIO.to(roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
   });
 
   socket.on("change_userName", async (data) => {
@@ -109,7 +119,7 @@ SocketIO.on("connection", (socket: Socket) => {
       message: data,
     };
 
-    socket.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client (except the sender that is listening/call the chat_message initially.)
+    SocketIO.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client (except the sender that is listening/call the chat_message initially.)
   });
 
   socket.on("disconnect", async () => {
@@ -121,7 +131,7 @@ SocketIO.on("connection", (socket: Socket) => {
       userName: client.data.userName,
     }));
 
-    socket.emit("room_members", users);
+    SocketIO.to(socket.data.roomId).emit("room_members", users);
     //generating system message.
     const systemMessage = {
       keyId: randomUUID(),
@@ -132,7 +142,7 @@ SocketIO.on("connection", (socket: Socket) => {
         minute: "2-digit",
       }),
     };
-    socket.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
+    SocketIO.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
   });
 });
 
