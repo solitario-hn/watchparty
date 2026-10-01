@@ -21,6 +21,7 @@ import ReactPlayer from "react-player";
 import { socketClient } from "../socketclient";
 
 export default function Video() {
+  const pendingSeekTimeRef = useRef(null);
   const playerRef = useRef(null);
   const [link, isLinked] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -34,6 +35,28 @@ export default function Video() {
   const [played, setPlayed] = useState(0);
 
   useEffect(() => {
+    function HandleRoomState(data) {
+      if (!data) {
+        return;
+      }
+      if (data.videoUrl !== videoUrl && data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+      }
+      if (typeof data.playing === "boolean") {
+        isPlaying(data.playing);
+      }
+      if (typeof data.playbackRate === "number") {
+        setPlayerBackRate(data.playbackRate);
+      }
+      if (typeof data.currentTime === "number") {
+        if (playerRef.current) {
+          playerRef.current.currentTime = data.currentTime;
+        } else {
+          pendingSeekTimeRef.current = data.currentTime;
+        }
+        setCurrentTime(data.currentTime);
+      }
+    }
     socketClient.on("room_state", (data) => {
       HandleRoomState(data);
     });
@@ -41,24 +64,12 @@ export default function Video() {
     return () => {
       socketClient.off("room_state", HandleRoomState);
     };
-  }, []);
+  }, [videoUrl]);
 
-  function HandleRoomState(data) {
-    if (!data) {
-      return;
-    }
-    if (data.videoUrl !== videoUrl && data.videoUrl) {
-      setVideoUrl(data.videoUrl);
-    }
-    if (typeof data.playing === "boolean") {
-      isPlaying(data.playing);
-    }
-    if (typeof data.playbackRate === "number") {
-      setPlayerBackRate(data.playbackRate);
-    }
-    if (typeof data.currentTime === "number" && playerRef.current) {
-      playerRef.current.currentTime = data.currentTime;
-      setCurrentTime(data.currentTime);
+  function handleReady() {
+    if (pendingSeekTimeRef.current !== null && playerRef.current) {
+      playerRef.current.currentTime = pendingSeekTimeRef.current;
+      pendingSeekTimeRef.current = null;
     }
   }
 
@@ -73,13 +84,17 @@ export default function Video() {
   }
 
   function handleVideoURL(url) {
-    setVideoUrl(url);
+    const targetUrl = url.trim();
+    if (!targetUrl) {
+      return;
+    }
+    setVideoUrl(targetUrl);
     setCurrentTime(0);
     setPlayed(0);
     isPlaying(true);
 
     socketClient.emit("room_state", {
-      videoUrl: url,
+      videoUrl: targetUrl,
       currentTime: 0,
       playing: true,
       playbackRate: playerbackrate,
@@ -89,8 +104,10 @@ export default function Video() {
   function handlePlayPause() {
     const newPlayingState = !playing;
     isPlaying(newPlayingState);
+    const currentTime = playerRef.current ? playerRef.current.currentTime : 0;
     socketClient.emit("room_state", {
       playing: newPlayingState,
+      currentTime: currentTime,
     });
   }
 
@@ -101,18 +118,20 @@ export default function Video() {
   }
 
   function handleDurationChange(event) {
-    console.log(event.target.duration);
-    if (event.target.duration) {
-      setDuration(event.target.duration);
+    const dur = event.target?.duration;
+    if (dur && !isNaN(dur)) {
+      setDuration(dur);
     }
   }
 
   function handleTimeUpdate(event) {
     if (!seek) {
-      setCurrentTime(event.target.currentTime);
-      if (event.target.duration) {
-        setDuration(event.target.duration);
-        setPlayed(event.target.currentTime / event.target.duration);
+      const curr = event.target?.currentTime || 0;
+      setCurrentTime(curr);
+      const dur = event.target?.duration || duration;
+      if (dur && !isNaN(dur) && dur > 0) {
+        setDuration(dur);
+        setPlayed(curr / dur);
       }
     }
   }
@@ -120,7 +139,9 @@ export default function Video() {
   function handleSeekChange(event) {
     const value = parseFloat(event.target.value);
     setPlayed(value);
-    setCurrentTime(value * duration);
+    if (duration < 0) {
+      setCurrentTime(value * duration);
+    }
   }
   const handleSeekMouseDown = () => {
     setSeeking(true);
@@ -181,6 +202,10 @@ export default function Video() {
             width={"100%"}
             height={"100%"}
             controls={true}
+            onReady={handleReady}
+            onError={(error) => {
+              console.error("Error loading video:", error);
+            }}
             playing={playing}
             src={videoUrl}
             muted={muted}

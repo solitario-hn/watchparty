@@ -74,7 +74,7 @@ SocketIO.on("connection", (socket: Socket) => {
 
     let room = rooms.get(roomId);
     if (!room) {
-      rooms.set(roomId, {
+      room = {
         roomId: roomId,
         videoUrl: "",
         playing: false,
@@ -83,9 +83,20 @@ SocketIO.on("connection", (socket: Socket) => {
         updatedAt: Date.now(),
         subtitle: [],
         selectedSubtitle: "",
-      });
+      };
+      rooms.set(roomId, room);
     }
-    socket.emit("room_state", room); //emits to the listener to the client side who just joined the room.
+
+    let currentTime = room.currentTime;
+    if (room.playing) {
+      const elapsedSeconds =
+        ((Date.now() - room.updatedAt) / 1000) * (room.playbackRate || 1);
+      currentTime += elapsedSeconds;
+    }
+    socket.emit("room_state", {
+      ...room,
+      currentTime,
+    }); //emits to the listener to the client side who just joined the room.
 
     const systemMessage = {
       keyId: randomUUID(),
@@ -127,7 +138,7 @@ SocketIO.on("connection", (socket: Socket) => {
     const roomId = socket.data.roomId;
     let room = rooms.get(roomId);
     if (!room) {
-      rooms.set(roomId, {
+      room = {
         roomId: roomId,
         videoUrl: "",
         playing: false,
@@ -136,10 +147,10 @@ SocketIO.on("connection", (socket: Socket) => {
         updatedAt: Date.now(),
         subtitle: [],
         selectedSubtitle: "",
-      });
+      };
     }
     Object.assign(room, data, { updatedAt: Date.now() });
-    socket.to(roomId).emit("room_state", data); //emits the url change to all the users backened in the room.(excluding sender)
+    socket.to(roomId).emit("room_state", room); //emits the url change to all the users backened in the room.(excluding sender)
   });
 
   socket.on("disconnect", async () => {
