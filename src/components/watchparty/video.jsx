@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import ReactPlayer from "react-player";
+import { socketClient } from "../socketclient";
 
 export default function Video() {
   const playerRef = useRef(null);
@@ -32,6 +33,20 @@ export default function Video() {
   const [seek, setSeeking] = useState(false);
   const [played, setPlayed] = useState(0);
 
+  useEffect(() => {
+    socketClient.on("video_link", (data) => {
+      setVideoUrl(data);
+    });
+
+    return () => {
+      socketClient.off("video_link");
+    };
+  }, []);
+
+  function handleVideoURL(url) {
+    socketClient.emit("video_link", url);
+  }
+
   function handleVolumeChange(event) {
     const val = parseFloat(event.target.value);
     setVolume(val);
@@ -44,6 +59,7 @@ export default function Video() {
 
   function handlePlaybackRateChange(event) {
     setPlayerBackRate(parseFloat(event.target.value));
+    socketClient.emit;
   }
 
   function handleDurationChange(event) {
@@ -102,14 +118,14 @@ export default function Video() {
             onChange={(e) => isLinked(e.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
-                setVideoUrl(link);
+                handleVideoURL(link);
               }
             }}
             className="h-12 w-full bg-transparent font-mono pr-16  text-white outline-none placeholder:text-[#555574] "
           />
 
           <button
-            onClick={() => setVideoUrl(link)}
+            onClick={() => handleVideoURL(link)}
             className="absolute cursor-pointer right-4 px-3 py-1 text-[#555574] hover:text-blue-300  transition-all duration-300 hover:-translate-y-1 hover:scale-110 active:scale-95"
           >
             <Ghost />

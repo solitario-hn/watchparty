@@ -84,6 +84,8 @@ SocketIO.on("connection", (socket: Socket) => {
         subtitle: [],
         selectedSubtitle: "",
       });
+    } else {
+      socket.emit("video_link", room.videoUrl); //emits to the listener to the client side who just joined the room.
     }
 
     const systemMessage = {
@@ -120,6 +122,19 @@ SocketIO.on("connection", (socket: Socket) => {
     };
 
     SocketIO.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client (except the sender that is listening/call the chat_message initially.)
+  });
+
+  /////listening video url change
+
+  socket.on("video_link", (data) => {
+    const roomId = socket.data.roomId;
+    const room = rooms.get(roomId);
+    if (!room) {
+      return;
+    } else {
+      room.videoUrl = data;
+      SocketIO.to(roomId).emit("video_link", data); //emits the url change to all the users backened in the room.(including sender)
+    }
   });
 
   socket.on("disconnect", async () => {

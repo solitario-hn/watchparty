@@ -16,7 +16,7 @@ export default function Chat() {
   const handleSend = (event) => {
     event.preventDefault(); //to prevent function from breaking while ui updates
     if (!inputText.trim()) return;
-    socketClient.emit("chat_message", newMessage.message);
+    socketClient.emit("chat_message", inputText.trim());
     setInputText("");
   };
   const endMessageRef = useRef(null);
@@ -43,7 +43,7 @@ export default function Chat() {
     });
 
     return () => {
-      socketClient.off("chat_message");
+      socketClient.off("chat_message"); //off if user is in the background--------cleaning socket doesn't run indefinitely.
     };
   }, []);
 
