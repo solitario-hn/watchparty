@@ -33,6 +33,7 @@ export default function Video() {
   const [currentTime, setCurrentTime] = useState(0);
   const [seek, setSeeking] = useState(false);
   const [played, setPlayed] = useState(0);
+  const [showSubtitles, SetshowSubtitles] = useState(false);
 
   useEffect(() => {
     function HandleRoomState(data) {
@@ -171,6 +172,10 @@ export default function Video() {
     return `${formatNum(hour)}:${formatNum(minutes)}:${formatNum(second)}`;
   };
 
+  const onFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
   return (
     <div className="h-full items-center justify-center w-full flex flex-1">
       {videoUrl === "" ? (
@@ -217,6 +222,15 @@ export default function Video() {
             onTimeUpdate={(event) => {
               handleTimeUpdate(event);
             }}
+            {...(showSubtitles && (
+              <track
+                kind="subtitles"
+                src={URL.createObjectURL(selectedFile)}
+                srcLang="en"
+                label="English"
+                default
+              />
+            ))}
           />
           <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e] shrink-0">
             <button
@@ -273,7 +287,19 @@ export default function Video() {
                 {formatTime(duration)}
               </h1>
             </div>
-            <button className="font-mono shrink-0 text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]">
+            <label className="font-mono shrink-0 text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e] cursor-pointer">
+              Upload
+              <input
+                type="file"
+                onChange={onFileChange}
+                className="hidden"
+                accept=".srt , .vtt"
+              ></input>
+            </label>
+            <button
+              onClick={SetshowSubtitles(!showSubtitles)}
+              className="font-mono shrink-0 text-sm text-[#8b9ecf] rounded-sm px-2 py-0.5 transition-all duration-300 hover:bg-[#8b9ecf] hover:text-[#1e1e2e]"
+            >
               CC
             </button>
 
