@@ -8,13 +8,6 @@ import path from "path";
 
 dotenv.config(); // Load environment variables from .env file
 
-interface SubtitleState {
-  id: string;
-  name: string;
-  content: string;
-  language: string;
-}
-
 interface RoomState {
   roomId: string;
   videoUrl: string;
@@ -22,8 +15,7 @@ interface RoomState {
   currentTime: number;
   playbackRate: number;
   updatedAt: number;
-  subtitle: SubtitleState[];
-  selectedSubtitle: string;
+  subtitle: "";
 }
 
 const app = express();
@@ -81,8 +73,7 @@ SocketIO.on("connection", (socket: Socket) => {
         currentTime: 0,
         playbackRate: 1,
         updatedAt: Date.now(),
-        subtitle: [],
-        selectedSubtitle: "",
+        subtitle: "",
       };
       rooms.set(roomId, room);
     }
@@ -145,18 +136,30 @@ SocketIO.on("connection", (socket: Socket) => {
         currentTime: 0,
         playbackRate: 1,
         updatedAt: Date.now(),
-        subtitle: [],
-        selectedSubtitle: "",
+        subtitle: "",
       };
     }
     Object.assign(room, data, { updatedAt: Date.now() });
-    socket.to(roomId).emit("room_state", room); //emits the url change to all the users backened in the room.(excluding sender)
+    SocketIO.to(roomId).emit("room_state", room); //emits the url change to all the users backened in the room.
+  });
+
+  //for the subtitles.
+
+  socket.on("room_subtitle", (data) => {
+    const roomId = socket.data.roomId;
+    let room = rooms.get(roomId);
+    if (!room) {
+      return;
+    }
+    room.subtitle = data;
+
+    SocketIO.emit("room_subtitle", data);
   });
 
   socket.on("disconnect", async () => {
     console.log("A user disconnected:", socket.id);
 
-    const clients = await socket.in(socket.data.roomId).fetchSockets();
+    const clients = await SocketIO.in(socket.data.roomId).fetchSockets();
     const users = clients.map((client) => ({
       socketId: client.id,
       userName: client.data.userName,
