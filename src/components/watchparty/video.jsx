@@ -10,6 +10,7 @@ import { Ghost, Subtitles, Check, Upload } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { socketClient } from "../socketclient";
+import { getStremioPlaybackUrl } from "../../utils/stremio";
 
 function convertToVtt(content) {
   if (!content) return "";
@@ -78,6 +79,17 @@ export default function Video() {
   const [seek, setSeeking] = useState(false);
   const [showSubtitles, SetshowSubtitles] = useState(false);
   const [ccMenuOpen, setCcMenuOpen] = useState(false);
+
+  const playbackUrl = useMemo(() => {
+    const supportsHevc =
+      globalThis.MediaSource?.isTypeSupported(
+        'video/mp4; codecs="hvc1.1.6.L93.B0"',
+      ) &&
+      globalThis.MediaSource?.isTypeSupported(
+        'video/mp4; codecs="hvc1.2.4.L153.B0"',
+      );
+    return getStremioPlaybackUrl(videoUrl, supportsHevc);
+  }, [videoUrl]);
 
   useEffect(() => {
     if (!subtitle) {
@@ -156,8 +168,13 @@ export default function Video() {
       if (!data) {
         return;
       }
-      if (data.videoUrl !== videoUrl && data.videoUrl) {
+      const videoChanged = Boolean(data.videoUrl && data.videoUrl !== videoUrl);
+      if (videoChanged) {
         setVideoUrl(data.videoUrl);
+        setDuration(0);
+        setPlayed(0);
+        // The new HLS stream loads asynchronously; seek once its metadata is ready.
+        pendingSeekTimeRef.current = data.currentTime ?? 0;
       }
       if (typeof data.playing === "boolean") {
         isPlaying(data.playing);
@@ -166,7 +183,7 @@ export default function Video() {
         setPlayerBackRate(data.playbackRate);
       }
       if (typeof data.currentTime === "number") {
-        if (playerRef.current) {
+        if (!videoChanged && playerRef.current?.readyState >= 1) {
           playerRef.current.currentTime = data.currentTime;
         } else {
           pendingSeekTimeRef.current = data.currentTime;
@@ -183,7 +200,7 @@ export default function Video() {
     return () => {
       socketClient.off("room_state", HandleRoomState);
     };
-  }, []);
+  }, [videoUrl]);
 
   useEffect(() => {
     function HandleSubitle(data) {
@@ -376,7 +393,7 @@ export default function Video() {
                 console.error("Error loading video:", error);
               }}
               playing={playing}
-              src={videoUrl}
+              src={playbackUrl}
               muted={muted}
               volume={volume}
               playbackRate={playerbackrate}

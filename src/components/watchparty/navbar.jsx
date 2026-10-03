@@ -43,7 +43,7 @@ export default function Navbar() {
   }
   return (
     <div className="h-18 w-full flex border-b px-4 border-[#2C2C38] items-center justify-between">
-      <WFillLogo size={50} />
+      <WFillLogo />
       <div className="flex flex-row gap-3">
         <input
           value={link}
