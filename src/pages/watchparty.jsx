@@ -17,7 +17,7 @@ function Watchparty() {
   useEffect(() => {
     if (!roomId) {
       const newId = crypto.randomUUID().slice(0, 4); //generates a rrandom room id.
-      navigate(`/watch/${newId}`, { replace: true }); //changes the url completely replace.
+      navigate(`/${newId}`, { replace: true }); //changes the url completely replace.
       console.log(newId, "newId");
       return;
     }
