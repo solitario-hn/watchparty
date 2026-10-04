@@ -1,14 +1,7 @@
-import {
-  Sent02Icon,
-  SentFreeIcons,
-  SentIcon,
-} from "@hugeicons/core-free-icons";
+import { SentFreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SendToBackIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Socket } from "socket.io-client";
-import { socketClient } from "../socketclient";
-import getUser from "../../utils/type";
+import { socketClient, emitRoomEvent } from "../socketclient";
 
 export default function Chat() {
   const [messages, setmessages] = useState([]);
@@ -16,7 +9,7 @@ export default function Chat() {
   const handleSend = (event) => {
     event.preventDefault(); //to prevent function from breaking while ui updates
     if (!inputText.trim()) return;
-    socketClient.emit("chat_message", inputText.trim());
+    if (!emitRoomEvent("chat_message", inputText.trim())) return;
     setInputText("");
   };
   const endMessageRef = useRef(null);
@@ -28,22 +21,27 @@ export default function Chat() {
   }, [messages]);
 
   useEffect(() => {
-    socketClient.on("chat_message", (data) => {
-      console.log(data);
+    const receiveMessage = (data) => {
+      if (
+        typeof data?.userName !== "string" ||
+        typeof data?.message !== "string"
+      )
+        return;
       const newMessage = {
-        keyId: Date.now(), //id for map
+        keyId: data.keyId,
         user: data.userName.trim(),
         message: data.message,
-        timestamp: new Date().toLocaleTimeString([], {
+        timestamp: new Date(data.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
       };
-      setmessages((prev) => [...prev, newMessage]); //to avoid rewriting the whole messages to new messages only.
-    });
+      setmessages((prev) => [...prev.slice(-499), newMessage]); //to avoid rewriting the whole messages to new messages only.
+    };
+    socketClient.on("chat_message", receiveMessage);
 
     return () => {
-      socketClient.off("chat_message"); //off if user is in the background--------cleaning socket doesn't run indefinitely.
+      socketClient.off("chat_message", receiveMessage); //off if user is in the background--------cleaning socket doesn't run indefinitely.
     };
   }, []);
 
@@ -66,7 +64,7 @@ export default function Chat() {
           return (
             <div
               key={eachText.keyId}
-              className="felx flex-col max-w-[80%] mr-auto items-start gap-1"
+              className="flex flex-col max-w-[80%] mr-auto items-start gap-1"
             >
               <div className="flex items-center gap-2 mb-1 px-1">
                 <h1 className="text-[16px] font-semibold font-sans text-[#8da2ec]">
@@ -91,6 +89,8 @@ export default function Chat() {
         className="p-3 border-t border-[#2C2C38] bg-[#1e1e2e] flex gap-2 items-center shrink-0 h-10"
       >
         <input
+          aria-label="Chat message"
+          maxLength={2000}
           placeholder="Join the chat"
           type="text"
           value={inputText}
@@ -101,6 +101,7 @@ export default function Chat() {
         ></input>
         <button
           className="w-7 h-7 px-1 py-1 text-[#6b7180] hover:text-blue-300 flex items-center justify-center rounded-full transition-all duration-300 active:scale-95 shrink-0 cursor-pointer shadow-md shadow-blue-950/20"
+          aria-label="Send message"
           type="submit"
         >
           <HugeiconsIcon icon={SentFreeIcons} />

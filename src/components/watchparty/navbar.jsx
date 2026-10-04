@@ -1,40 +1,57 @@
 import { CircleCheck, CircleFadingPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import WFillLogo from "./logo";
-import { socketClient } from "../socketclient";
+import { socketClient, emitRoomEvent, reportRoomError } from "../socketclient";
+
+import { isValidVideoUrl } from "../../utils/validation";
 
 export default function Navbar() {
+  const copyTimerRef = useRef(null);
+  const mountedRef = useRef(false);
   const [copied, isCopied] = useState(false);
   const [link, setLink] = useState("");
   const HandleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      reportRoomError(
+        "Could not copy the link. Copy the room address from your browser.",
+      );
+      return;
+    }
+    if (!mountedRef.current) return;
     isCopied(true);
-    setTimeout(() => {
+    clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
       isCopied(false);
     }, 1500);
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     function SsetLink(data) {
       setLink(data.videoUrl);
     }
     socketClient.on("room_state", SsetLink);
 
     return () => {
+      mountedRef.current = false;
+      clearTimeout(copyTimerRef.current);
       socketClient.off("room_state", SsetLink);
     };
   }, []);
   function sendLink() {
-    if (!link) return;
+    if (!isValidVideoUrl(link)) {
+      reportRoomError("Enter a valid HTTP or HTTPS video URL.");
+      return;
+    }
 
-    socketClient.emit("room_state", {
-      videoUrl: link,
+    emitRoomEvent("room_state", {
+      videoUrl: link.trim(),
       currentTime: 0,
       playing: true,
       playbackRate: 1,
     });
-
-    console.log(link, "heheheh");
   }
 
   function handleLink(event) {
@@ -46,6 +63,8 @@ export default function Navbar() {
       <WFillLogo />
       <div className="flex flex-row gap-3">
         <input
+          aria-label="Video URL"
+          maxLength={4096}
           value={link}
           onChange={handleLink}
           className="w-56 max-w-[50vw] rounded border border-[#2C2C38] bg-[#20202e] px-3 py-1.5 text-xs font-mono text-[#8b9ecf] outline-none focus:border-blue-400"

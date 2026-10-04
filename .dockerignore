@@ -1,0 +1,13 @@
+.git
+.github
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.log
+.DS_Store
+backend/tests
+tests
+backend/src/public
+backend/src/socket.tldr
+backend/notes.md

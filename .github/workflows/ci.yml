@@ -1,0 +1,28 @@
+name: Checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+        working-directory: backend
+      - run: bun run check
+      - run: bun audit
+      - run: bun audit
+        working-directory: backend
+      - run: docker build -t watchparty:ci .
+      - name: Container smoke test
+        run: |
+          docker run -d --name watchparty -p 3000:3000 -e CLIENT_ORIGIN=http://127.0.0.1:3000 watchparty:ci
+          trap 'docker logs watchparty; docker rm -f watchparty' EXIT
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:3000/healthz
+          curl --fail http://127.0.0.1:3000/abcd | grep 'id="root"'

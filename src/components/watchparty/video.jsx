@@ -9,7 +9,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Ghost, Subtitles, Check, Upload } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import ReactPlayer from "react-player";
-import { socketClient } from "../socketclient";
+import { socketClient, emitRoomEvent, reportRoomError } from "../socketclient";
+import { isValidVideoUrl } from "../../utils/validation";
 import { getStremioPlaybackUrl } from "../../utils/stremio";
 
 function convertToVtt(content) {
@@ -68,14 +69,13 @@ export default function Video() {
   const [link, isLinked] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [playing, isPlaying] = useState(false);
-  const [muted, isMuted] = useState(false);
+  const [muted, isMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [playerbackrate, setPlayerBackRate] = useState(1);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [played, setPlayed] = useState(0);
   const [subtitle, setSubtitle] = useState("");
-  const [blobUrl, setBlobUrl] = useState("");
   const [seek, setSeeking] = useState(false);
   const [showSubtitles, SetshowSubtitles] = useState(false);
   const [ccMenuOpen, setCcMenuOpen] = useState(false);
@@ -91,21 +91,6 @@ export default function Video() {
     return getStremioPlaybackUrl(videoUrl, supportsHevc);
   }, [videoUrl]);
 
-  useEffect(() => {
-    if (!subtitle) {
-      setBlobUrl("");
-      return;
-    }
-    const vttContent = convertToVtt(subtitle);
-    const blob = new Blob([vttContent], { type: "text/vtt" });
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [subtitle]);
-
   const cues = useMemo(() => {
     return parseSubtitles(subtitle);
   }, [subtitle]);
@@ -116,31 +101,6 @@ export default function Video() {
       cues.find((c) => currentTime >= c.start && currentTime <= c.end) || null
     );
   }, [showSubtitles, cues, currentTime]);
-
-  const syncTrackMode = (isShowing) => {
-    const video = playerRef.current;
-    if (!video || !video.textTracks) return;
-    for (let i = 0; i < video.textTracks.length; i++) {
-      // Keep native track hidden to prevent duplicate rendering with custom overlay
-      video.textTracks[i].mode = "hidden";
-    }
-  };
-
-  useEffect(() => {
-    syncTrackMode(showSubtitles && Boolean(subtitle));
-
-    const video = playerRef.current;
-    if (video?.textTracks) {
-      const handleTrackChange = () =>
-        syncTrackMode(showSubtitles && Boolean(subtitle));
-      video.textTracks.addEventListener?.("addtrack", handleTrackChange);
-      video.textTracks.addEventListener?.("change", handleTrackChange);
-      return () => {
-        video.textTracks.removeEventListener?.("addtrack", handleTrackChange);
-        video.textTracks.removeEventListener?.("change", handleTrackChange);
-      };
-    }
-  }, [showSubtitles, subtitle, blobUrl]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -168,7 +128,8 @@ export default function Video() {
       if (!data) {
         return;
       }
-      const videoChanged = Boolean(data.videoUrl && data.videoUrl !== videoUrl);
+      const videoChanged =
+        typeof data.videoUrl === "string" && data.videoUrl !== videoUrl;
       if (videoChanged) {
         setVideoUrl(data.videoUrl);
         setDuration(0);
@@ -190,7 +151,7 @@ export default function Video() {
         }
         setCurrentTime(data.currentTime);
       }
-      if (typeof data.subtitle === "string" && data.subtitle.trim()) {
+      if (typeof data.subtitle === "string") {
         const formatted = convertToVtt(data.subtitle);
         setSubtitle(formatted);
       }
@@ -204,7 +165,7 @@ export default function Video() {
 
   useEffect(() => {
     function HandleSubitle(data) {
-      if (typeof data === "string" && data.trim()) {
+      if (typeof data === "string") {
         const formatted = convertToVtt(data);
         setSubtitle(formatted);
         SetshowSubtitles(true);
@@ -219,11 +180,10 @@ export default function Video() {
   }, []);
 
   function handleReady() {
-    if (pendingSeekTimeRef.current !== null && playerRef.current) {
+    if (pendingSeekTimeRef.current !== null && playerRef.current?.readyState >= 1) {
       playerRef.current.currentTime = pendingSeekTimeRef.current;
       pendingSeekTimeRef.current = null;
     }
-    syncTrackMode(Boolean(showSubtitles && subtitle));
   }
 
   function handleVolumeChange(event) {
@@ -238,17 +198,15 @@ export default function Video() {
 
   function handleVideoURL(url) {
     const targetUrl = url.trim();
-    if (!targetUrl) {
+    if (!isValidVideoUrl(targetUrl)) {
+      reportRoomError("Enter a valid HTTP or HTTPS video URL.");
       return;
     }
-    setVideoUrl(targetUrl);
-    setDuration(0);
-    pendingSeekTimeRef.current = 0;
-    setCurrentTime(0);
-    setPlayed(0);
-    isPlaying(true);
-
-    socketClient.emit("room_state", {
+    if (!socketClient.connected || !socketClient.partyReady) {
+      reportRoomError("Wait for connection before loading a video.");
+      return;
+    }
+    emitRoomEvent("room_state", {
       videoUrl: targetUrl,
       currentTime: 0,
       playing: true,
@@ -258,23 +216,21 @@ export default function Video() {
 
   function handlePlayPause() {
     const newPlayingState = !playing;
-    isPlaying(newPlayingState);
     const currentTime = playerRef.current ? playerRef.current.currentTime : 0;
-    socketClient.emit("room_state", {
+    emitRoomEvent("room_state", {
       playing: newPlayingState,
-      currentTime: currentTime,
+      currentTime: Number.isFinite(currentTime) ? currentTime : 0,
     });
   }
 
   function handlePlaybackRateChange(event) {
     const rate = parseFloat(event.target.value);
-    setPlayerBackRate(rate);
-    socketClient.emit("room_state", { playbackRate: rate });
+    emitRoomEvent("room_state", { playbackRate: rate });
   }
 
   function handleDurationChange(event) {
     const dur = event.target?.duration;
-    if (dur && !isNaN(dur)) {
+    if (Number.isFinite(dur) && dur > 0) {
       setDuration(dur);
     }
   }
@@ -284,9 +240,9 @@ export default function Video() {
       const curr = event.target?.currentTime || 0;
       setCurrentTime(curr);
       const dur = event.target?.duration || duration;
-      if (dur && !isNaN(dur) && dur > 0) {
+      if (Number.isFinite(dur) && dur > 0) {
         setDuration(dur);
-        setPlayed(curr / dur);
+        setPlayed(Math.min(1, curr / dur));
       }
     }
   }
@@ -306,17 +262,17 @@ export default function Video() {
     setSeeking(false);
     const value = parseFloat(event.target.value);
     const newTime = value * duration;
+    if (!emitRoomEvent("room_state", { currentTime: newTime, playing })) return;
     if (playerRef.current) {
       playerRef.current.currentTime = newTime;
     }
     setCurrentTime(newTime);
     setPlayed(value);
 
-    socketClient.emit("room_state", { currentTime: newTime, playing: playing });
   };
 
   const formatTime = (seconds) => {
-    if (isNaN(seconds)) {
+    if (!Number.isFinite(seconds)) {
       return "00:00";
     }
     const hour = Math.floor(seconds / 3600);
@@ -331,11 +287,23 @@ export default function Video() {
     if (!file) {
       return;
     }
-    const rawText = await file.text();
+    if (file.size > 256000 || !/\.(srt|vtt)$/i.test(file.name)) {
+      reportRoomError("Choose an SRT or VTT subtitle file under 256 KB.");
+      return;
+    }
+    if (!socketClient.connected || !socketClient.partyReady) {
+      reportRoomError("Wait for connection before uploading subtitles.");
+      return;
+    }
+    let rawText;
+    try {
+      rawText = await file.text();
+    } catch {
+      reportRoomError("Could not read subtitle file.");
+      return;
+    }
     const formatted = convertToVtt(rawText);
-    setSubtitle(formatted);
-    SetshowSubtitles(true);
-    socketClient.emit("room_subtitle", formatted);
+    emitRoomEvent("room_subtitle", formatted);
     setCcMenuOpen(false);
     event.target.value = "";
   };
@@ -347,10 +315,12 @@ export default function Video() {
   };
 
   return (
-    <div className="h-full items-center justify-center w-full flex flex-1">
+    <div className="min-h-0 min-w-0 items-center justify-center w-full flex flex-1">
       {videoUrl === "" ? (
-        <div className="relative transition-all duration-300 hover:scale-105 hover:-translate-y-2 scale-90 flex w-160 items-center text-[#555574] rounded-md bg-[#282838] p-2 outline-dashed outline-2 hover:outline-blue-300 focus-within:outline-blue-400">
+        <div className="relative transition-all duration-300 hover:scale-105 hover:-translate-y-2 scale-90 flex w-full max-w-160 items-center text-[#555574] rounded-md bg-[#282838] p-2 outline-dashed outline-2 hover:outline-blue-300 focus-within:outline-blue-400">
           <input
+            aria-label="Video URL"
+            maxLength={4096}
             placeholder="Play your mood"
             type="text"
             value={link}
@@ -364,6 +334,7 @@ export default function Video() {
           />
 
           <button
+            aria-label="Load video"
             onClick={() => handleVideoURL(link)}
             className="absolute cursor-pointer right-4 px-3 py-1 text-[#555574] hover:text-blue-300  transition-all duration-300 hover:-translate-y-1 hover:scale-110 active:scale-95"
           >
@@ -381,16 +352,20 @@ export default function Video() {
               width={"100%"}
               height={"100%"}
               controls={false}
+              playsInline
               onLoadedMetadata={handleReady}
               onEnded={() => {
                 isPlaying(false);
-                socketClient.emit("room_state", {
+                emitRoomEvent("room_state", {
                   playing: false,
                   currentTime: playerRef.current?.currentTime || 0,
                 });
               }}
-              onError={(error) => {
-                console.error("Error loading video:", error);
+              onError={() => {
+                isPlaying(false);
+                reportRoomError(
+                  "Video could not play. Check the link, browser format support, and whether the source allows playback on this site.",
+                );
               }}
               playing={playing}
               src={playbackUrl}
@@ -403,17 +378,7 @@ export default function Video() {
               onTimeUpdate={(event) => {
                 handleTimeUpdate(event);
               }}
-            >
-              {blobUrl && (
-                <track
-                  kind="subtitles"
-                  src={blobUrl}
-                  srcLang="en"
-                  label="English"
-                  default
-                />
-              )}
-            </ReactPlayer>
+            ></ReactPlayer>
 
             {/* Custom Subtitles Overlay */}
             {showSubtitles && activeCue && (
@@ -427,6 +392,7 @@ export default function Video() {
 
           <div className="flex flex-row items-center w-full h-10 px-2 p-2 justify-between gap-2 bg-[#1e1e2e] shrink-0">
             <button
+              aria-label={playing ? "Pause video" : "Play video"}
               onClick={() => {
                 handlePlayPause();
               }}
@@ -436,6 +402,7 @@ export default function Video() {
             </button>
             <div className="flex items-center group/volume ">
               <button
+                aria-label={muted ? "Unmute video" : "Mute video"}
                 onClick={() => {
                   isMuted(!muted);
                 }}
@@ -447,6 +414,7 @@ export default function Video() {
               </button>
               <input
                 className="w-0 shrink-0 bg-[#8b9ecf] h-1 rounded-lg opacity-0 transition-all duration-300 group-hover/volume:w-16 group-hover/volume:opacity-100 group-hover/volume:-translate-y-0.75 accent-blue-300 focus:accent-blue-400  appearance-none focus:outline-none"
+                aria-label="Volume"
                 type="range"
                 min={0}
                 max={1}
@@ -470,10 +438,23 @@ export default function Video() {
                 onChange={(event) => {
                   handleSeekChange(event);
                 }}
-                onMouseDown={handleSeekMouseDown}
-                onMouseUp={handleSeekMouseUp}
-                onTouchStart={handleSeekMouseDown}
-                onTouchEnd={handleSeekMouseUp}
+                onPointerDown={handleSeekMouseDown}
+                onPointerUp={handleSeekMouseUp}
+                onPointerCancel={() => setSeeking(false)}
+                onKeyUp={(event) => {
+                  if (
+                    [
+                      "ArrowLeft",
+                      "ArrowRight",
+                      "Home",
+                      "End",
+                      "PageUp",
+                      "PageDown",
+                    ].includes(event.key)
+                  )
+                    handleSeekMouseUp(event);
+                }}
+                aria-label="Playback position"
                 style={{
                   background: `linear-gradient(to right, #8b9ecf ${
                     played * 100

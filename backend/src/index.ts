@@ -1,185 +1,58 @@
-import express, { type Request, type Response } from "express";
-import cors from "cors";
-import http from "http";
-import { randomUUID } from "node:crypto";
-import { Server, type Socket } from "socket.io";
-import dotenv from "dotenv";
-import path from "path";
+import "dotenv/config";
+import { fileURLToPath } from "node:url";
+import { createWatchpartyServer } from "./server";
 
-dotenv.config(); // Load environment variables from .env file
-
-interface RoomState {
-  roomId: string;
-  videoUrl: string;
-  playing: boolean;
-  currentTime: number;
-  playbackRate: number;
-  updatedAt: number;
-  subtitle: "";
-}
-
-const app = express();
-app.use(cors());
-app.use(express.json()); //express returns response in raw data parsing to json.
-app.use(express.static(path.join(__dirname, "public"))); //to serve static files from public folder
-
-const httpserver = http.createServer(app);
-
-const SocketIO = new Server(httpserver, {
-  cors: {
-    origin: "*", // Allow requests from any origin
-    methods: ["GET", "POST"], // Allow GET and POST methods
-  },
+const port = Number(process.env.PORT ?? 3000);
+if (!Number.isInteger(port) || port < 1 || port > 65535)
+  throw new Error("PORT must be between 1 and 65535.");
+const origins = (
+  process.env.CLIENT_ORIGIN ??
+  (process.env.NODE_ENV === "production"
+    ? ""
+    : `http://localhost:5173,http://127.0.0.1:5173,http://localhost:${port},http://127.0.0.1:${port}`)
+)
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+if (
+  !origins.length ||
+  origins.some((origin) => {
+    try {
+      const url = new URL(origin);
+      return (
+        !["http:", "https:"].includes(url.protocol) || url.origin !== origin
+      );
+    } catch {
+      return true;
+    }
+  })
+)
+  throw new Error(
+    "CLIENT_ORIGIN must list exact frontend origins, e.g. https://watchparty.example.com (no trailing slash).",
+  );
+const instance = createWatchpartyServer({
+  origins,
+  staticDir: fileURLToPath(new URL("../../dist/", import.meta.url)),
 });
-
-const rooms = new Map<string, RoomState>();
-
-// SocketIO connection event listener
-// SocketIO is listening for connection events from clients.
-// socket is an individual connection to a client. Each client has its own socket connection.
-// socket.on() listen to
-// socket.emit()
-// socket.broadcast()
-// SocketIO.emit()
-// SokcetIO.to(roomid).emit()
-// socket.to(roomid).emit()
-
-SocketIO.on("connection", (socket: Socket) => {
-  //SocketIO (har ek individual bande ki request listen kar raha main connection)
-  console.log("A user connected:", socket.id);
-
-  socket.on("joined_room", async (data) => {
-    const roomId = data.roomId;
-    const userName = data.userName;
-    if (socket.data.roomId) socket.leave(socket.data.roomId);
-
-    socket.data.roomId = roomId;
-    socket.data.userName = userName;
-    socket.join(roomId);
-
-    const clients = await SocketIO.in(roomId).fetchSockets();
-    const users = clients.map((client) => ({
-      socketId: client.id,
-      userName: client.data.userName,
-    }));
-    SocketIO.to(roomId).emit("room_members", users);
-
-    let room = rooms.get(roomId);
-    if (!room) {
-      room = {
-        roomId: roomId,
-        videoUrl: "",
-        playing: false,
-        currentTime: 0,
-        playbackRate: 1,
-        updatedAt: Date.now(),
-        subtitle: "",
-      };
-      rooms.set(roomId, room);
-    }
-
-    let currentTime = room.currentTime;
-    if (room.playing) {
-      const elapsedSeconds =
-        ((Date.now() - room.updatedAt) / 1000) * (room.playbackRate || 1);
-      currentTime += elapsedSeconds;
-    }
-    socket.emit("room_state", {
-      ...room,
-      currentTime,
-    }); //emits to the listener to the client side who just joined the room.
-
-    const systemMessage = {
-      keyId: randomUUID(),
-      userName: "system",
-      message: `${socket.data.userName} joined the party.`,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-    SocketIO.to(roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
-  });
-
-  socket.on("change_userName", async (data) => {
-    socket.data.userName = data;
-
-    const clients = await socket.in(socket.data.roomId).fetchSockets();
-    const users = clients.map((client) => ({
-      socketId: client.id,
-      userName: client.data.userName,
-    }));
-
-    socket.emit("room_members", users);
-  });
-
-  socket.on("chat_message", (data) => {
-    //backend is listening from the socketClient.
-    console.log(data);
-    const newMessage = {
-      roomId: socket.data.roomId,
-      userName: socket.data.userName,
-      message: data,
-    };
-
-    SocketIO.to(socket.data.roomId).emit("chat_message", newMessage); //backend will emit to the client (except the sender that is listening/call the chat_message initially.)
-  });
-
-  socket.on("room_state", (data) => {
-    const roomId = socket.data.roomId;
-    let room = rooms.get(roomId);
-    if (!room) {
-      room = {
-        roomId: roomId,
-        videoUrl: "",
-        playing: false,
-        currentTime: 0,
-        playbackRate: 1,
-        updatedAt: Date.now(),
-        subtitle: "",
-      };
-    }
-    Object.assign(room, data, { updatedAt: Date.now() });
-    SocketIO.to(roomId).emit("room_state", room); //emits the url change to all the users backened in the room.
-  });
-
-  //for the subtitles.
-
-  socket.on("room_subtitle", (data) => {
-    const roomId = socket.data.roomId;
-    let room = rooms.get(roomId);
-    if (!room) {
-      return;
-    }
-    room.subtitle = data;
-
-    SocketIO.emit("room_subtitle", data);
-  });
-
-  socket.on("disconnect", async () => {
-    console.log("A user disconnected:", socket.id);
-
-    const clients = await SocketIO.in(socket.data.roomId).fetchSockets();
-    const users = clients.map((client) => ({
-      socketId: client.id,
-      userName: client.data.userName,
-    }));
-
-    SocketIO.to(socket.data.roomId).emit("room_members", users);
-    //generating system message.
-    const systemMessage = {
-      keyId: randomUUID(),
-      userName: "system",
-      message: `${socket.data.userName} disconnected from the room.`,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-    SocketIO.to(socket.data.roomId).emit("chat_message", systemMessage); //backend is emiting the message to all the connected clients.
-  });
-});
-
-httpserver.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+instance.server.listen(port, process.env.HOST ?? "0.0.0.0", () =>
+  console.log(`Watchparty listening on port ${port}`),
+);
+let stopping = false;
+const shutdown = () => {
+  if (stopping) return;
+  stopping = true;
+  const deadline = setTimeout(() => process.exit(1), 10_000);
+  deadline.unref();
+  instance
+    .close()
+    .then(() => {
+      clearTimeout(deadline);
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+};
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socketClient } from "../socketclient";
+import { socketClient, emitRoomEvent } from "../socketclient";
 import getUser from "../../utils/type";
 
 const BG_COLORS = [
@@ -13,7 +13,7 @@ const BG_COLORS = [
 
 export default function Member() {
   const [member, setMember] = useState([]);
-  const [userName, setUserName] = useState(getUser());
+  const [userName, setUserName] = useState(getUser);
 
   useEffect(() => {
     const HandleRoomMembers = (users) => {
@@ -21,9 +21,14 @@ export default function Member() {
       const newMember = users.map((user) => ({
         id: user.socketId,
         name: user.userName,
-        initial: user.userName[0],
+        initial: user.userName?.[0]?.toUpperCase() || "?",
         status: "participant",
-        bg: BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)],
+        bg: BG_COLORS[
+          Array.from(user.socketId).reduce(
+            (sum, char) => sum + char.charCodeAt(0),
+            0,
+          ) % BG_COLORS.length
+        ],
       }));
       setMember(newMember);
     };
@@ -35,14 +40,11 @@ export default function Member() {
     };
   }, []);
 
-  const [showDropDown, setDropDown] = useState(false);
   const visibleMembers = member.slice(0, 3);
   const remainingMembers = member.length - visibleMembers.length;
 
   const HandleUserName = (event) => {
     setUserName(event.target.value);
-    localStorage.setItem("watchparty_name", event.target.value);
-    socketClient.emit("change_userName", event.target.value);
   };
 
   return (
@@ -55,11 +57,7 @@ export default function Member() {
         </div>
         <div className="flex items-center -space-x-2 cursor-pointer group">
           {visibleMembers.map((element) => (
-            <div
-              key={element.id}
-              className="relative"
-              style={{ zIndex: element.id }}
-            >
+            <div key={element.id} className="relative">
               <div
                 className={`w-7 h-7 rounded-full ${element.bg} border-2 border-black flex items-center justify-center text-xs`}
               >
@@ -77,6 +75,30 @@ export default function Member() {
           <input
             value={userName}
             onChange={HandleUserName}
+            onBlur={() => {
+              const name = userName.trim();
+              if (
+                !name ||
+                name.toLowerCase() === "system" ||
+                Array.from(name).some(
+                  (char) =>
+                    char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+                )
+              ) {
+                setUserName(getUser());
+                return;
+              }
+              if (emitRoomEvent("change_userName", name)) {
+                try {
+                  localStorage.setItem("watchparty_name", name);
+                } catch { /* Storage is disabled; the server still keeps this session name. */ }
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+            maxLength={40}
+            aria-label="Your display name"
             className="w-32 h-6 pl-5 pr-2 bg-[#20202e] hover:bg-[#252538] focus:bg-[#282838] text-white text-xs font-mono rounded border border-[#2c2c38] focus:border-blue-400 outline-none transition-all placeholder:text-gray-600"
             placeholder="choose your aura"
             type="text"

@@ -1,6 +1,9 @@
 export interface RoomState {
+  roomId: string;
   videoUrl: string;
   playing: boolean;
   currentTime: number;
-  playerbackRate: number;
+  playbackRate: number;
+  updatedAt: number;
+  subtitle: string;
 }
